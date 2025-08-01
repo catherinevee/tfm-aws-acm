@@ -1,0 +1,230 @@
+# ==============================================================================
+# Advanced Azure Cosmos DB Example - terraform.tfvars
+# ==============================================================================
+
+# Resource Group Configuration
+resource_group_name = "rg-cosmosdb-advanced"
+location            = "East US"
+
+# Cosmos DB Account Configuration
+cosmosdb_account_name = "cosmosdb-advanced-example"
+
+# Account Settings
+kind = "GlobalDocumentDB"
+enable_automatic_failover = true
+enable_multiple_write_locations = true
+consistency_level = "Strong"
+
+# Geo-replication Configuration
+geo_locations = [
+  {
+    location          = "East US"
+    failover_priority = 0
+    zone_redundant    = true
+  },
+  {
+    location          = "West US"
+    failover_priority = 1
+    zone_redundant    = false
+  }
+]
+
+# Backup Policy
+backup_policy = {
+  type                = "Continuous"
+  retention_in_hours  = 720
+  storage_redundancy  = "Local"
+}
+
+# Network Configuration
+public_network_access_enabled = false
+
+# CORS Rules
+cors_rules = [
+  {
+    allowed_origins    = ["https://myapp.com", "https://api.myapp.com"]
+    allowed_methods    = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed_headers    = ["*"]
+    exposed_headers    = ["*"]
+    max_age_in_seconds = 86400
+  }
+]
+
+# Capabilities
+capabilities = [
+  "EnableAggregationPipeline",
+  "EnableCassandra",
+  "EnableGremlin",
+  "EnableTable"
+]
+
+# SQL API Configuration
+sql_databases = {
+  "sqldb" = {
+    name = "sqldb"
+    autoscale_settings = {
+      max_throughput = 4000
+    }
+  }
+}
+
+sql_containers = {
+  "users" = {
+    name                = "users"
+    database_name       = "sqldb"
+    partition_key_path  = "/userId"
+    autoscale_settings = {
+      max_throughput = 4000
+    }
+    unique_keys = [
+      {
+        paths = ["/email"]
+      }
+    ]
+    indexing_policy = {
+      indexing_mode = "consistent"
+      included_paths = [
+        {
+          path = "/*"
+        }
+      ]
+      excluded_paths = [
+        {
+          path = "/\"_etag\"/?"
+        }
+      ]
+      composite_indexes = [
+        {
+          indexes = [
+            {
+              path  = "/name"
+              order = "ascending"
+            },
+            {
+              path  = "/age"
+              order = "descending"
+            }
+          ]
+        }
+      ]
+    }
+    default_ttl = 86400
+  }
+}
+
+# MongoDB API Configuration
+mongo_databases = {
+  "mongodb" = {
+    name = "mongodb"
+    throughput = 400
+  }
+}
+
+mongo_collections = {
+  "products" = {
+    name          = "products"
+    database_name = "mongodb"
+    throughput    = 400
+    indexes = [
+      {
+        keys   = ["_id"]
+        unique = true
+      },
+      {
+        keys   = ["category"]
+        unique = false
+      },
+      {
+        keys   = ["price"]
+        unique = false
+      }
+    ]
+    default_ttl_seconds = 2592000
+  }
+}
+
+# Cassandra API Configuration
+cassandra_keyspaces = {
+  "cassandra" = {
+    name = "cassandra"
+    autoscale_settings = {
+      max_throughput = 4000
+    }
+  }
+}
+
+cassandra_tables = {
+  "events" = {
+    name          = "events"
+    keyspace_name = "cassandra"
+    throughput    = 400
+    schema = {
+      column = {
+        name = "event_id"
+        type = "uuid"
+      }
+      partition_keys = [
+        {
+          name = "event_id"
+        }
+      ]
+      cluster_keys = [
+        {
+          name     = "timestamp"
+          order_by = "desc"
+        }
+      ]
+    }
+  }
+}
+
+# Gremlin API Configuration
+gremlin_databases = {
+  "gremlin" = {
+    name = "gremlin"
+    autoscale_settings = {
+      max_throughput = 4000
+    }
+  }
+}
+
+gremlin_graphs = {
+  "social" = {
+    name                = "social"
+    database_name       = "gremlin"
+    partition_key_path  = "/pk"
+    autoscale_settings = {
+      max_throughput = 4000
+    }
+    index_policy = {
+      indexing_mode = "consistent"
+      included_paths = [
+        {
+          path = "/*"
+        }
+      ]
+      excluded_paths = [
+        {
+          path = "/\"_etag\"/?"
+        }
+      ]
+    }
+  }
+}
+
+# Table API Configuration
+tables = {
+  "logs" = {
+    name = "logs"
+    throughput = 400
+  }
+}
+
+# Tags
+tags = {
+  Environment = "Production"
+  CostCenter  = "IT"
+  Owner       = "Database Team"
+  Project     = "Multi-API Application"
+  ManagedBy   = "Terraform"
+} 
