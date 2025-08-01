@@ -1,328 +1,223 @@
 # ==============================================================================
-# Azure Cosmos DB Module - Outputs
+# Outputs for Azure Certificate Management Module
+# ==============================================================================
+# This file defines all output values that can be used by other modules
 # ==============================================================================
 
-# Cosmos DB Account Outputs
-output "cosmosdb_account_id" {
-  description = "The ID of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.id
+# ==============================================================================
+# Key Vault Outputs
+# ==============================================================================
+
+output "key_vault_id" {
+  description = "The ID of the Azure Key Vault"
+  value       = azurerm_key_vault.certificate_vault.id
 }
 
-output "cosmosdb_account_name" {
-  description = "The name of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.name
+output "key_vault_name" {
+  description = "The name of the Azure Key Vault"
+  value       = azurerm_key_vault.certificate_vault.name
 }
 
-output "cosmosdb_account_endpoint" {
-  description = "The endpoint of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.endpoint
+output "key_vault_uri" {
+  description = "The URI of the Azure Key Vault"
+  value       = azurerm_key_vault.certificate_vault.vault_uri
 }
 
-output "cosmosdb_account_read_endpoints" {
-  description = "The read endpoints of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.read_endpoints
+output "key_vault_resource_id" {
+  description = "The resource ID of the Azure Key Vault"
+  value       = azurerm_key_vault.certificate_vault.resource_id
 }
 
-output "cosmosdb_account_write_endpoints" {
-  description = "The write endpoints of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.write_endpoints
-}
+# ==============================================================================
+# Certificate Outputs
+# ==============================================================================
 
-output "cosmosdb_account_primary_key" {
-  description = "The primary key of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.primary_key
-  sensitive   = true
-}
-
-output "cosmosdb_account_secondary_key" {
-  description = "The secondary key of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.secondary_key
-  sensitive   = true
-}
-
-output "cosmosdb_account_primary_readonly_key" {
-  description = "The primary readonly key of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.primary_readonly_key
-  sensitive   = true
-}
-
-output "cosmosdb_account_secondary_readonly_key" {
-  description = "The secondary readonly key of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.secondary_readonly_key
-  sensitive   = true
-}
-
-output "cosmosdb_account_connection_strings" {
-  description = "The connection strings of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.connection_strings
-  sensitive   = true
-}
-
-output "cosmosdb_account_geo_locations" {
-  description = "The geo locations of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.geo_locations
-}
-
-output "cosmosdb_account_consistency_policy" {
-  description = "The consistency policy of the Cosmos DB account"
-  value       = azurerm_cosmosdb_account.main.consistency_policy
-}
-
-# SQL Database Outputs
-output "sql_databases" {
-  description = "Map of SQL databases created"
+output "self_signed_certificates" {
+  description = "Map of created self-signed certificates"
   value = {
-    for k, v in azurerm_cosmosdb_sql_database.databases : k => {
-      id       = v.id
-      name     = v.name
-      resource_group_name = v.resource_group_name
-      account_name = v.account_name
+    for name, cert in azurerm_key_vault_certificate.self_signed : name => {
+      id           = cert.id
+      name         = cert.name
+      version      = cert.version
+      thumbprint   = cert.thumbprint
+      certificate_data = cert.certificate_data
+      certificate_data_base64 = cert.certificate_data_base64
     }
   }
 }
 
-output "sql_database_ids" {
-  description = "List of SQL database IDs"
-  value       = values(azurerm_cosmosdb_sql_database.databases)[*].id
-}
-
-output "sql_database_names" {
-  description = "List of SQL database names"
-  value       = values(azurerm_cosmosdb_sql_database.databases)[*].name
-}
-
-# SQL Container Outputs
-output "sql_containers" {
-  description = "Map of SQL containers created"
+output "imported_certificates" {
+  description = "Map of imported certificates"
   value = {
-    for k, v in azurerm_cosmosdb_sql_container.containers : k => {
-      id       = v.id
-      name     = v.name
-      database_name = v.database_name
-      resource_group_name = v.resource_group_name
-      account_name = v.account_name
-      partition_key_paths = v.partition_key_paths
-      partition_key_version = v.partition_key_version
-      default_ttl = v.default_ttl
-      analytical_storage_ttl = v.analytical_storage_ttl
+    for name, cert in azurerm_key_vault_certificate.imported : name => {
+      id           = cert.id
+      name         = cert.name
+      version      = cert.version
+      thumbprint   = cert.thumbprint
+      certificate_data = cert.certificate_data
+      certificate_data_base64 = cert.certificate_data_base64
     }
   }
 }
 
-output "sql_container_ids" {
-  description = "List of SQL container IDs"
-  value       = values(azurerm_cosmosdb_sql_container.containers)[*].id
+output "all_certificates" {
+  description = "Combined map of all certificates (self-signed and imported)"
+  value = merge(
+    {
+      for name, cert in azurerm_key_vault_certificate.self_signed : "self-signed-${name}" => {
+        id           = cert.id
+        name         = cert.name
+        version      = cert.version
+        thumbprint   = cert.thumbprint
+        type         = "self-signed"
+        certificate_data = cert.certificate_data
+        certificate_data_base64 = cert.certificate_data_base64
+      }
+    },
+    {
+      for name, cert in azurerm_key_vault_certificate.imported : "imported-${name}" => {
+        id           = cert.id
+        name         = cert.name
+        version      = cert.version
+        thumbprint   = cert.thumbprint
+        type         = "imported"
+        certificate_data = cert.certificate_data
+        certificate_data_base64 = cert.certificate_data_base64
+      }
+    }
+  )
 }
 
-output "sql_container_names" {
-  description = "List of SQL container names"
-  value       = values(azurerm_cosmosdb_sql_container.containers)[*].name
-}
+# ==============================================================================
+# Certificate Issuer Outputs
+# ==============================================================================
 
-# MongoDB Database Outputs
-output "mongo_databases" {
-  description = "Map of MongoDB databases created"
+output "certificate_issuers" {
+  description = "Map of configured certificate issuers"
   value = {
-    for k, v in azurerm_cosmosdb_mongo_database.mongo_databases : k => {
-      id       = v.id
-      name     = v.name
-      resource_group_name = v.resource_group_name
-      account_name = v.account_name
+    for name, issuer in azurerm_key_vault_certificate_issuer.ca_issuers : name => {
+      id           = issuer.id
+      name         = issuer.name
+      provider_name = issuer.provider_name
+      account_id   = issuer.account_id
     }
   }
 }
 
-output "mongo_database_ids" {
-  description = "List of MongoDB database IDs"
-  value       = values(azurerm_cosmosdb_mongo_database.mongo_databases)[*].id
+# ==============================================================================
+# Certificate Contacts Outputs
+# ==============================================================================
+
+output "certificate_contacts" {
+  description = "Certificate contacts configuration"
+  value = length(azurerm_key_vault_certificate_contacts.contacts) > 0 ? {
+    id = azurerm_key_vault_certificate_contacts.contacts[0].id
+    contacts = azurerm_key_vault_certificate_contacts.contacts[0].contact
+  } : null
 }
 
-output "mongo_database_names" {
-  description = "List of MongoDB database names"
-  value       = values(azurerm_cosmosdb_mongo_database.mongo_databases)[*].name
-}
+# ==============================================================================
+# Certificate Secrets Outputs
+# ==============================================================================
 
-# MongoDB Collection Outputs
-output "mongo_collections" {
-  description = "Map of MongoDB collections created"
+output "certificate_secrets" {
+  description = "Map of certificate secrets"
   value = {
-    for k, v in azurerm_cosmosdb_mongo_collection.mongo_collections : k => {
-      id       = v.id
-      name     = v.name
-      database_name = v.database_name
-      resource_group_name = v.resource_group_name
-      account_name = v.account_name
-      default_ttl_seconds = v.default_ttl_seconds
-      analytical_storage_ttl = v.analytical_storage_ttl
+    for name, secret in azurerm_key_vault_secret.certificate_secrets : name => {
+      id           = secret.id
+      name         = secret.name
+      version      = secret.version
+      content_type = secret.content_type
+      not_before_date = secret.not_before_date
+      expiration_date = secret.expiration_date
     }
   }
 }
 
-output "mongo_collection_ids" {
-  description = "List of MongoDB collection IDs"
-  value       = values(azurerm_cosmosdb_mongo_collection.mongo_collections)[*].id
+# ==============================================================================
+# Private Endpoint Outputs
+# ==============================================================================
+
+output "private_endpoint_id" {
+  description = "The ID of the private endpoint (if enabled)"
+  value       = var.enable_private_endpoint ? azurerm_private_endpoint.key_vault_pe[0].id : null
 }
 
-output "mongo_collection_names" {
-  description = "List of MongoDB collection names"
-  value       = values(azurerm_cosmosdb_mongo_collection.mongo_collections)[*].name
+output "private_endpoint_ip_address" {
+  description = "The private IP address of the private endpoint (if enabled)"
+  value       = var.enable_private_endpoint ? azurerm_private_endpoint.key_vault_pe[0].private_service_connection[0].private_ip_address : null
 }
 
-# Cassandra Keyspace Outputs
-output "cassandra_keyspaces" {
-  description = "Map of Cassandra keyspaces created"
+# ==============================================================================
+# Diagnostic Settings Outputs
+# ==============================================================================
+
+output "diagnostic_settings_id" {
+  description = "The ID of the diagnostic settings (if enabled)"
+  value       = var.enable_diagnostic_settings ? azurerm_monitor_diagnostic_setting.key_vault_diagnostics[0].id : null
+}
+
+# ==============================================================================
+# Access Policy Outputs
+# ==============================================================================
+
+output "access_policies" {
+  description = "Current access policies on the Key Vault"
   value = {
-    for k, v in azurerm_cosmosdb_cassandra_keyspace.cassandra_keyspaces : k => {
-      id       = v.id
-      name     = v.name
-      resource_group_name = v.resource_group_name
-      account_name = v.account_name
+    current_user = {
+      tenant_id = data.azurerm_client_config.current.tenant_id
+      object_id = data.azurerm_client_config.current.object_id
+      certificate_permissions = var.certificate_permissions
+      key_permissions         = var.key_permissions
+      secret_permissions      = var.secret_permissions
+      storage_permissions     = var.storage_permissions
     }
+    additional_policies = var.additional_access_policies
   }
 }
 
-output "cassandra_keyspace_ids" {
-  description = "List of Cassandra keyspace IDs"
-  value       = values(azurerm_cosmosdb_cassandra_keyspace.cassandra_keyspaces)[*].id
+# ==============================================================================
+# Network Configuration Outputs
+# ==============================================================================
+
+output "network_acls" {
+  description = "Network access control configuration"
+  value = var.network_acls != null ? {
+    default_action             = var.network_acls.default_action
+    bypass                     = var.network_acls.bypass
+    ip_rules                   = var.network_acls.ip_rules
+    virtual_network_subnet_ids = var.network_acls.virtual_network_subnet_ids
+  } : null
 }
 
-output "cassandra_keyspace_names" {
-  description = "List of Cassandra keyspace names"
-  value       = values(azurerm_cosmosdb_cassandra_keyspace.cassandra_keyspaces)[*].name
-}
-
-# Cassandra Table Outputs
-output "cassandra_tables" {
-  description = "Map of Cassandra tables created"
-  value = {
-    for k, v in azurerm_cosmosdb_cassandra_table.cassandra_tables : k => {
-      id       = v.id
-      name     = v.name
-      cassandra_keyspace_id = v.cassandra_keyspace_id
-      default_ttl = v.default_ttl
-    }
-  }
-}
-
-output "cassandra_table_ids" {
-  description = "List of Cassandra table IDs"
-  value       = values(azurerm_cosmosdb_cassandra_table.cassandra_tables)[*].id
-}
-
-output "cassandra_table_names" {
-  description = "List of Cassandra table names"
-  value       = values(azurerm_cosmosdb_cassandra_table.cassandra_tables)[*].name
-}
-
-# Gremlin Database Outputs
-output "gremlin_databases" {
-  description = "Map of Gremlin databases created"
-  value = {
-    for k, v in azurerm_cosmosdb_gremlin_database.gremlin_databases : k => {
-      id       = v.id
-      name     = v.name
-      resource_group_name = v.resource_group_name
-      account_name = v.account_name
-    }
-  }
-}
-
-output "gremlin_database_ids" {
-  description = "List of Gremlin database IDs"
-  value       = values(azurerm_cosmosdb_gremlin_database.gremlin_databases)[*].id
-}
-
-output "gremlin_database_names" {
-  description = "List of Gremlin database names"
-  value       = values(azurerm_cosmosdb_gremlin_database.gremlin_databases)[*].name
-}
-
-# Gremlin Graph Outputs
-output "gremlin_graphs" {
-  description = "Map of Gremlin graphs created"
-  value = {
-    for k, v in azurerm_cosmosdb_gremlin_graph.gremlin_graphs : k => {
-      id       = v.id
-      name     = v.name
-      database_name = v.database_name
-      resource_group_name = v.resource_group_name
-      account_name = v.account_name
-      partition_key_paths = v.partition_key_paths
-      partition_key_version = v.partition_key_version
-      default_ttl = v.default_ttl
-      analytical_storage_ttl = v.analytical_storage_ttl
-    }
-  }
-}
-
-output "gremlin_graph_ids" {
-  description = "List of Gremlin graph IDs"
-  value       = values(azurerm_cosmosdb_gremlin_graph.gremlin_graphs)[*].id
-}
-
-output "gremlin_graph_names" {
-  description = "List of Gremlin graph names"
-  value       = values(azurerm_cosmosdb_gremlin_graph.gremlin_graphs)[*].name
-}
-
-# Table API Outputs
-output "tables" {
-  description = "Map of Table API tables created"
-  value = {
-    for k, v in azurerm_cosmosdb_table.tables : k => {
-      id       = v.id
-      name     = v.name
-      resource_group_name = v.resource_group_name
-      account_name = v.account_name
-    }
-  }
-}
-
-output "table_ids" {
-  description = "List of Table API table IDs"
-  value       = values(azurerm_cosmosdb_table.tables)[*].id
-}
-
-output "table_names" {
-  description = "List of Table API table names"
-  value       = values(azurerm_cosmosdb_table.tables)[*].name
-}
-
+# ==============================================================================
 # Summary Outputs
-output "total_databases" {
-  description = "Total number of databases created across all APIs"
-  value = {
-    sql_databases     = length(var.sql_databases)
-    mongo_databases   = length(var.mongo_databases)
-    cassandra_keyspaces = length(var.cassandra_keyspaces)
-    gremlin_databases = length(var.gremlin_databases)
-    total = length(var.sql_databases) + length(var.mongo_databases) + length(var.cassandra_keyspaces) + length(var.gremlin_databases)
-  }
-}
+# ==============================================================================
 
-output "total_containers" {
-  description = "Total number of containers/collections/tables/graphs created"
+output "summary" {
+  description = "Summary of the certificate management module deployment"
   value = {
-    sql_containers    = length(var.sql_containers)
-    mongo_collections = length(var.mongo_collections)
-    cassandra_tables  = length(var.cassandra_tables)
-    gremlin_graphs    = length(var.gremlin_graphs)
-    tables            = length(var.tables)
-    total = length(var.sql_containers) + length(var.mongo_collections) + length(var.cassandra_tables) + length(var.gremlin_graphs) + length(var.tables)
-  }
-}
-
-output "cosmosdb_account_summary" {
-  description = "Summary of the Cosmos DB account configuration"
-  value = {
-    name                = azurerm_cosmosdb_account.main.name
-    location            = azurerm_cosmosdb_account.main.location
-    resource_group_name = azurerm_cosmosdb_account.main.resource_group_name
-    offer_type          = azurerm_cosmosdb_account.main.offer_type
-    kind                = azurerm_cosmosdb_account.main.kind
-    consistency_level   = azurerm_cosmosdb_account.main.consistency_policy[0].consistency_level
-    geo_locations_count = length(azurerm_cosmosdb_account.main.geo_locations)
-    capabilities_count  = length(var.capabilities)
-    public_network_access_enabled = azurerm_cosmosdb_account.main.public_network_access_enabled
+    key_vault = {
+      id   = azurerm_key_vault.certificate_vault.id
+      name = azurerm_key_vault.certificate_vault.name
+      uri  = azurerm_key_vault.certificate_vault.vault_uri
+    }
+    certificates = {
+      self_signed_count = length(azurerm_key_vault_certificate.self_signed)
+      imported_count    = length(azurerm_key_vault_certificate.imported)
+      total_count       = length(azurerm_key_vault_certificate.self_signed) + length(azurerm_key_vault_certificate.imported)
+    }
+    issuers = {
+      count = length(azurerm_key_vault_certificate_issuer.ca_issuers)
+    }
+    secrets = {
+      count = length(azurerm_key_vault_secret.certificate_secrets)
+    }
+    features = {
+      private_endpoint_enabled = var.enable_private_endpoint
+      diagnostics_enabled      = var.enable_diagnostic_settings
+      purge_protection         = var.purge_protection_enabled
+      soft_delete_days         = var.soft_delete_retention_days
+    }
   }
 } 

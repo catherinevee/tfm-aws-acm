@@ -1,22 +1,139 @@
-# Azure Cosmos DB Terraform Module
+# Azure Certificate Management Module (AWS ACM Equivalent)
 
-A comprehensive Terraform module for deploying Azure Cosmos DB accounts with support for all API types (SQL, MongoDB, Cassandra, Gremlin, and Table) and extensive customization options.
+This Terraform module provides comprehensive certificate management functionality for Azure, equivalent to AWS Certificate Manager (ACM). It uses Azure Key Vault as the primary certificate store and management service.
 
 ## Features
 
-- **Multi-API Support**: Deploy Cosmos DB accounts with SQL, MongoDB, Cassandra, Gremlin, or Table API
-- **Comprehensive Configuration**: Support for all major Cosmos DB features including:
-  - Geo-replication and failover
-  - Backup policies (Periodic and Continuous)
-  - Network security (VNet rules, IP filters)
-  - Customer-managed keys with Key Vault integration
-  - Analytical storage
-  - CORS configuration
-  - Identity and access management
-- **Flexible Throughput**: Support for both manual and autoscale throughput provisioning
-- **Advanced Indexing**: Configurable indexing policies for SQL and Gremlin APIs
-- **TTL Support**: Time-to-live configuration for data lifecycle management
-- **Security**: Built-in security features with comprehensive validation
+- **Azure Key Vault Integration**: Secure certificate storage and management
+- **Self-Signed Certificates**: Create development and testing certificates
+- **Certificate Import**: Import existing certificates from files
+- **Certificate Issuers**: Configure certificate authorities for automatic issuance
+- **Certificate Contacts**: Set up notification contacts for certificate events
+- **Certificate Secrets**: Store certificate-related secrets
+- **Private Endpoints**: Secure access through private networking
+- **Diagnostic Settings**: Comprehensive monitoring and logging
+- **Access Policies**: Fine-grained access control
+- **Network ACLs**: Network-level access restrictions
+
+## Quick Start
+
+### Basic Usage
+
+```hcl
+module "certificate_management" {
+  source = "./tfm-aws-acm"
+
+  key_vault_name      = "my-cert-vault"
+  location           = "eastus"
+  resource_group_name = "my-resource-group"
+
+  # Create a self-signed certificate
+  self_signed_certificates = {
+    "web-app-cert" = {
+      dns_names = ["example.com", "www.example.com"]
+      subject   = "CN=example.com"
+      validity_in_months = 12
+    }
+  }
+
+  tags = {
+    Environment = "Production"
+    Project     = "Web Application"
+  }
+}
+```
+
+### Advanced Usage
+
+```hcl
+module "certificate_management" {
+  source = "./tfm-aws-acm"
+
+  key_vault_name      = "my-secure-cert-vault"
+  location           = "eastus"
+  resource_group_name = "my-resource-group"
+
+  # Key Vault Configuration
+  soft_delete_retention_days = 30
+  purge_protection_enabled   = true
+  key_vault_sku_name         = "premium"
+
+  # Network Access Control
+  network_acls = {
+    default_action = "Deny"
+    bypass         = "AzureServices"
+    ip_rules       = ["10.0.0.0/8", "192.168.0.0/16"]
+    virtual_network_subnet_ids = ["/subscriptions/.../subnets/private"]
+  }
+
+  # Self-Signed Certificates
+  self_signed_certificates = {
+    "api-cert" = {
+      dns_names = ["api.example.com"]
+      subject   = "CN=api.example.com"
+      key_size  = 4096
+      validity_in_months = 24
+      days_before_expiry = 60
+    }
+    "wildcard-cert" = {
+      dns_names = ["*.example.com", "example.com"]
+      subject   = "CN=*.example.com"
+      key_size  = 2048
+      validity_in_months = 12
+    }
+  }
+
+  # Imported Certificates
+  imported_certificates = {
+    "existing-cert" = {
+      certificate_file     = "./certs/existing-cert.pfx"
+      certificate_password = "password123"
+    }
+  }
+
+  # Certificate Issuers
+  certificate_issuers = {
+    "digicert" = {
+      provider_name = "DigiCert"
+      account_id    = "your-digicert-account"
+      password      = "your-digicert-password"
+      admin_contacts = [
+        {
+          first_name    = "John"
+          last_name     = "Doe"
+          email_address = "john.doe@example.com"
+          phone         = "+1-555-0123"
+        }
+      ]
+    }
+  }
+
+  # Certificate Contacts
+  certificate_contacts = [
+    {
+      email = "admin@example.com"
+      name  = "System Administrator"
+      phone = "+1-555-0123"
+    }
+  ]
+
+  # Private Endpoint
+  enable_private_endpoint = true
+  private_endpoint_subnet_id = "/subscriptions/.../subnets/private"
+  private_dns_zone_ids = ["/subscriptions/.../privatednszones/privatelink.vaultcore.azure.net"]
+
+  # Diagnostic Settings
+  enable_diagnostic_settings = true
+  log_analytics_workspace_id = "/subscriptions/.../workspaces/my-workspace"
+  diagnostic_retention_days  = 90
+
+  tags = {
+    Environment = "Production"
+    Project     = "Secure Web Application"
+    Owner       = "DevOps Team"
+  }
+}
+```
 
 ## Requirements
 
@@ -31,397 +148,159 @@ A comprehensive Terraform module for deploying Azure Cosmos DB accounts with sup
 |------|---------|
 | azurerm | ~> 3.0 |
 
-## Modules
-
-No modules.
-
-## Resources
-
-| Name | Type |
-|------|------|
-| [azurerm_cosmosdb_account](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cosmosdb_account) | resource |
-| [azurerm_cosmosdb_sql_database](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cosmosdb_sql_database) | resource |
-| [azurerm_cosmosdb_sql_container](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cosmosdb_sql_container) | resource |
-| [azurerm_cosmosdb_mongo_database](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cosmosdb_mongo_database) | resource |
-| [azurerm_cosmosdb_mongo_collection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cosmosdb_mongo_collection) | resource |
-| [azurerm_cosmosdb_cassandra_keyspace](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cosmosdb_cassandra_keyspace) | resource |
-| [azurerm_cosmosdb_cassandra_table](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cosmosdb_cassandra_table) | resource |
-| [azurerm_cosmosdb_gremlin_database](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cosmosdb_gremlin_database) | resource |
-| [azurerm_cosmosdb_gremlin_graph](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cosmosdb_gremlin_graph) | resource |
-| [azurerm_cosmosdb_table](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cosmosdb_table) | resource |
-
 ## Inputs
 
 ### Required Variables
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| cosmosdb_account_name | The name of the Cosmos DB account | `string` | n/a | yes |
-| location | The Azure region where the Cosmos DB account will be created | `string` | n/a | yes |
-| resource_group_name | The name of the resource group where the Cosmos DB account will be created | `string` | n/a | yes |
+| key_vault_name | The name of the Azure Key Vault for certificate storage | `string` | n/a | yes |
+| location | The Azure region where resources will be created | `string` | n/a | yes |
+| resource_group_name | The name of the resource group where resources will be created | `string` | n/a | yes |
 
-### Optional Variables
+### Key Vault Configuration
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| offer_type | The offer type for the Cosmos DB account | `string` | `"Standard"` | no |
-| kind | The kind of Cosmos DB account | `string` | `"GlobalDocumentDB"` | no |
-| enable_automatic_failover | Enable automatic failover for the Cosmos DB account | `bool` | `false` | no |
-| enable_free_tier | Enable free tier for the Cosmos DB account | `bool` | `false` | no |
-| enable_multiple_write_locations | Enable multiple write locations for the Cosmos DB account | `bool` | `false` | no |
-| consistency_level | The consistency level for the Cosmos DB account | `string` | `"Session"` | no |
-| max_interval_in_seconds | The maximum interval in seconds for bounded staleness consistency | `number` | `5` | no |
-| max_staleness_prefix | The maximum staleness prefix for bounded staleness consistency | `number` | `100` | no |
-| geo_locations | List of geo locations for the Cosmos DB account | `list(object)` | `[]` | no |
-| backup_policy | Backup policy configuration for the Cosmos DB account | `object` | `null` | no |
-| virtual_network_rules | List of virtual network rules for the Cosmos DB account | `list(object)` | `[]` | no |
-| ip_range_filter | IP range filter for the Cosmos DB account | `string` | `null` | no |
-| public_network_access_enabled | Enable public network access for the Cosmos DB account | `bool` | `true` | no |
-| key_vault_key_id | Key Vault Key ID for customer-managed keys | `string` | `null` | no |
-| analytical_storage | Analytical storage configuration | `object` | `null` | no |
-| capacity | Capacity configuration for the Cosmos DB account | `object` | `null` | no |
-| identity | Identity configuration for the Cosmos DB account | `object` | `null` | no |
-| restore | Restore configuration for the Cosmos DB account | `object` | `null` | no |
-| cors_rules | List of CORS rules for the Cosmos DB account | `list(object)` | `[]` | no |
-| capabilities | List of capabilities to enable for the Cosmos DB account | `list(string)` | `[]` | no |
-| sql_databases | Map of SQL databases to create | `map(object)` | `{}` | no |
-| sql_containers | Map of SQL containers to create | `map(object)` | `{}` | no |
-| mongo_databases | Map of MongoDB databases to create | `map(object)` | `{}` | no |
-| mongo_collections | Map of MongoDB collections to create | `map(object)` | `{}` | no |
-| cassandra_keyspaces | Map of Cassandra keyspaces to create | `map(object)` | `{}` | no |
-| cassandra_tables | Map of Cassandra tables to create | `map(object)` | `{}` | no |
-| gremlin_databases | Map of Gremlin databases to create | `map(object)` | `{}` | no |
-| gremlin_graphs | Map of Gremlin graphs to create | `map(object)` | `{}` | no |
-| tables | Map of Table API tables to create | `map(object)` | `{}` | no |
+| enabled_for_disk_encryption | Enable Key Vault for disk encryption | `bool` | `false` | no |
+| soft_delete_retention_days | The number of days that items should be retained for once soft deleted | `number` | `7` | no |
+| purge_protection_enabled | Enable purge protection for the Key Vault | `bool` | `false` | no |
+| key_vault_sku_name | The SKU name of the Key Vault (standard or premium) | `string` | `"standard"` | no |
+
+### Network Access Control
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| network_acls | Network access control configuration for the Key Vault | `object` | `null` | no |
+
+### Access Policies
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| certificate_permissions | Certificate permissions for the access policy | `list(string)` | `["Get", "List", "Create", "Delete", "Update", "Import", "Backup", "Restore", "Recover", "Purge"]` | no |
+| key_permissions | Key permissions for the access policy | `list(string)` | `["Get", "List", "Create", "Delete", "Update", "Import", "Backup", "Restore", "Recover", "Purge"]` | no |
+| secret_permissions | Secret permissions for the access policy | `list(string)` | `["Get", "List", "Set", "Delete", "Backup", "Restore", "Recover", "Purge"]` | no |
+| storage_permissions | Storage permissions for the access policy | `list(string)` | `["Get", "List", "Delete", "Set", "Update", "RegenerateKey", "Recover", "Purge", "Backup", "Restore", "SetSas", "ListSas", "GetSas", "DeleteSas"]` | no |
+| additional_access_policies | Additional access policies for other users/service principals | `list(object)` | `[]` | no |
+
+### Self-Signed Certificates
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| self_signed_certificates | Map of self-signed certificates to create | `map(object)` | `{}` | no |
+
+### Imported Certificates
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| imported_certificates | Map of certificates to import from files | `map(object)` | `{}` | no |
+
+### Certificate Issuers
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| certificate_issuers | Map of certificate issuers to configure | `map(object)` | `{}` | no |
+
+### Certificate Contacts
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| certificate_contacts | List of certificate contacts for notifications | `list(object)` | `[]` | no |
+
+### Certificate Secrets
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| certificate_secrets | Map of certificate secrets to store | `map(object)` | `{}` | no |
+
+### Private Endpoint Configuration
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| enable_private_endpoint | Enable private endpoint for Key Vault access | `bool` | `false` | no |
+| private_endpoint_subnet_id | The subnet ID for the private endpoint | `string` | `null` | no |
+| private_dns_zone_ids | List of private DNS zone IDs for the private endpoint | `list(string)` | `[]` | no |
+
+### Diagnostic Settings
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| enable_diagnostic_settings | Enable diagnostic settings for monitoring | `bool` | `false` | no |
+| log_analytics_workspace_id | The Log Analytics workspace ID for diagnostic logs | `string` | `null` | no |
+| storage_account_id | The storage account ID for diagnostic logs | `string` | `null` | no |
+| diagnostic_log_categories | List of diagnostic log categories to enable | `list(string)` | `["AuditEvent", "AzurePolicyEvaluationDetails"]` | no |
+| diagnostic_retention_days | Number of days to retain diagnostic logs | `number` | `30` | no |
+
+### Tags
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
 | tags | Tags to apply to all resources | `map(string)` | `{}` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| cosmosdb_account_id | The ID of the Cosmos DB account |
-| cosmosdb_account_name | The name of the Cosmos DB account |
-| cosmosdb_account_endpoint | The endpoint of the Cosmos DB account |
-| cosmosdb_account_read_endpoints | The read endpoints of the Cosmos DB account |
-| cosmosdb_account_write_endpoints | The write endpoints of the Cosmos DB account |
-| cosmosdb_account_primary_key | The primary key of the Cosmos DB account |
-| cosmosdb_account_secondary_key | The secondary key of the Cosmos DB account |
-| cosmosdb_account_primary_readonly_key | The primary readonly key of the Cosmos DB account |
-| cosmosdb_account_secondary_readonly_key | The secondary readonly key of the Cosmos DB account |
-| cosmosdb_account_connection_strings | The connection strings of the Cosmos DB account |
-| cosmosdb_account_geo_locations | The geo locations of the Cosmos DB account |
-| cosmosdb_account_consistency_policy | The consistency policy of the Cosmos DB account |
-| sql_databases | Map of SQL databases created |
-| sql_containers | Map of SQL containers created |
-| mongo_databases | Map of MongoDB databases created |
-| mongo_collections | Map of MongoDB collections created |
-| cassandra_keyspaces | Map of Cassandra keyspaces created |
-| cassandra_tables | Map of Cassandra tables created |
-| gremlin_databases | Map of Gremlin databases created |
-| gremlin_graphs | Map of Gremlin graphs created |
-| tables | Map of Table API tables created |
-| total_databases | Total number of databases created across all APIs |
-| total_containers | Total number of containers/collections/tables/graphs created |
-| cosmosdb_account_summary | Summary of the Cosmos DB account configuration |
+| key_vault_id | The ID of the Azure Key Vault |
+| key_vault_name | The name of the Azure Key Vault |
+| key_vault_uri | The URI of the Azure Key Vault |
+| key_vault_resource_id | The resource ID of the Azure Key Vault |
+| self_signed_certificates | Map of created self-signed certificates |
+| imported_certificates | Map of imported certificates |
+| all_certificates | Combined map of all certificates (self-signed and imported) |
+| certificate_issuers | Map of configured certificate issuers |
+| certificate_contacts | Certificate contacts configuration |
+| certificate_secrets | Map of certificate secrets |
+| private_endpoint_id | The ID of the private endpoint (if enabled) |
+| private_endpoint_ip_address | The private IP address of the private endpoint (if enabled) |
+| diagnostic_settings_id | The ID of the diagnostic settings (if enabled) |
+| access_policies | Current access policies on the Key Vault |
+| network_acls | Network access control configuration |
+| summary | Summary of the certificate management module deployment |
 
-## Usage Examples
+## Examples
 
-### Basic SQL API Example
+### Basic Example
 
-```hcl
-module "cosmosdb" {
-  source = "./tfm-aws-acm"
+See the `examples/basic/` directory for a simple implementation.
 
-  cosmosdb_account_name = "my-cosmosdb-account"
-  location             = "East US"
-  resource_group_name  = "my-resource-group"
+### Advanced Example
 
-  # Basic SQL API configuration
-  kind = "GlobalDocumentDB"
-  
-  # Geo-replication
-  geo_locations = [
-    {
-      location          = "East US"
-      failover_priority = 0
-      zone_redundant    = true
-    },
-    {
-      location          = "West US"
-      failover_priority = 1
-      zone_redundant    = false
-    }
-  ]
+See the `examples/advanced/` directory for a comprehensive implementation with all features enabled.
 
-  # SQL databases and containers
-  sql_databases = {
-    "mydb" = {
-      name = "mydb"
-      autoscale_settings = {
-        max_throughput = 4000
-      }
-    }
-  }
+## Security Considerations
 
-  sql_containers = {
-    "mycontainer" = {
-      name                = "mycontainer"
-      database_name       = "mydb"
-      partition_key_path  = "/id"
-      autoscale_settings = {
-        max_throughput = 4000
-      }
-      indexing_policy = {
-        indexing_mode = "consistent"
-        included_paths = [
-          {
-            path = "/*"
-          }
-        ]
-        excluded_paths = [
-          {
-            path = "/\"_etag\"/?"
-          }
-        ]
-      }
-    }
-  }
-
-  tags = {
-    Environment = "Production"
-    Project     = "MyApp"
-  }
-}
-```
-
-### MongoDB API Example
-
-```hcl
-module "cosmosdb_mongo" {
-  source = "./tfm-aws-acm"
-
-  cosmosdb_account_name = "my-mongo-cosmosdb"
-  location             = "East US"
-  resource_group_name  = "my-resource-group"
-
-  # MongoDB API configuration
-  kind = "MongoDB"
-  capabilities = ["EnableMongo"]
-
-  # MongoDB databases and collections
-  mongo_databases = {
-    "mymongodb" = {
-      name = "mymongodb"
-      throughput = 400
-    }
-  }
-
-  mongo_collections = {
-    "mycollection" = {
-      name          = "mycollection"
-      database_name = "mymongodb"
-      throughput    = 400
-      indexes = [
-        {
-          keys   = ["_id"]
-          unique = true
-        },
-        {
-          keys   = ["name"]
-          unique = false
-        }
-      ]
-      default_ttl_seconds = 86400
-    }
-  }
-
-  tags = {
-    Environment = "Development"
-    API         = "MongoDB"
-  }
-}
-```
-
-### Cassandra API Example
-
-```hcl
-module "cosmosdb_cassandra" {
-  source = "./tfm-aws-acm"
-
-  cosmosdb_account_name = "my-cassandra-cosmosdb"
-  location             = "East US"
-  resource_group_name  = "my-resource-group"
-
-  # Cassandra API configuration
-  capabilities = ["EnableCassandra"]
-
-  # Cassandra keyspaces and tables
-  cassandra_keyspaces = {
-    "mykeyspace" = {
-      name = "mykeyspace"
-      autoscale_settings = {
-        max_throughput = 4000
-      }
-    }
-  }
-
-  cassandra_tables = {
-    "mytable" = {
-      name          = "mytable"
-      keyspace_name = "mykeyspace"
-      throughput    = 400
-      schema = {
-        column = {
-          name = "id"
-          type = "uuid"
-        }
-        partition_keys = [
-          {
-            name = "id"
-          }
-        ]
-      }
-    }
-  }
-
-  tags = {
-    Environment = "Staging"
-    API         = "Cassandra"
-  }
-}
-```
-
-### Advanced Configuration Example
-
-```hcl
-module "cosmosdb_advanced" {
-  source = "./tfm-aws-acm"
-
-  cosmosdb_account_name = "my-advanced-cosmosdb"
-  location             = "East US"
-  resource_group_name  = "my-resource-group"
-
-  # Advanced account configuration
-  enable_automatic_failover = true
-  enable_multiple_write_locations = true
-  consistency_level = "Strong"
-
-  # Backup policy
-  backup_policy = {
-    type                = "Continuous"
-    retention_in_hours  = 720
-    storage_redundancy  = "Local"
-  }
-
-  # Network security
-  public_network_access_enabled = false
-  virtual_network_rules = [
-    {
-      subnet_id = "/subscriptions/.../subnets/my-subnet"
-      ignore_missing_vnet_service_endpoint = false
-    }
-  ]
-
-  # Analytical storage
-  analytical_storage = {
-    schema_type = "WellDefined"
-  }
-
-  # Identity
-  identity = {
-    type = "SystemAssigned"
-  }
-
-  # CORS rules
-  cors_rules = [
-    {
-      allowed_origins    = ["https://myapp.com"]
-      allowed_methods    = ["GET", "POST", "PUT", "DELETE"]
-      allowed_headers    = ["*"]
-      exposed_headers    = ["*"]
-      max_age_in_seconds = 86400
-    }
-  ]
-
-  # Multiple API support
-  capabilities = [
-    "EnableAggregationPipeline",
-    "EnableCassandra",
-    "EnableGremlin",
-    "EnableTable"
-  ]
-
-  # Mixed API resources
-  sql_databases = {
-    "sqldb" = {
-      name = "sqldb"
-      throughput = 400
-    }
-  }
-
-  gremlin_databases = {
-    "gremlindb" = {
-      name = "gremlindb"
-      autoscale_settings = {
-        max_throughput = 4000
-      }
-    }
-  }
-
-  tables = {
-    "mytable" = {
-      name = "mytable"
-      throughput = 400
-    }
-  }
-
-  tags = {
-    Environment = "Production"
-    CostCenter  = "IT"
-    Owner       = "Database Team"
-  }
-}
-```
+1. **Access Control**: Use the principle of least privilege when configuring access policies
+2. **Network Security**: Implement network ACLs to restrict access to trusted networks
+3. **Private Endpoints**: Use private endpoints for secure access in production environments
+4. **Monitoring**: Enable diagnostic settings to monitor certificate operations
+5. **Backup**: Ensure certificates are properly backed up and can be restored
+6. **Rotation**: Implement certificate rotation policies for production certificates
 
 ## Best Practices
 
-### Security
-- Use VNet rules to restrict network access
-- Enable customer-managed keys for encryption
-- Use system-assigned managed identities
-- Configure appropriate CORS rules
-- Enable private endpoints for production workloads
+1. **Naming Convention**: Use consistent naming conventions for certificates and resources
+2. **Tagging**: Apply appropriate tags for cost management and resource organization
+3. **Version Control**: Store Terraform configurations in version control
+4. **State Management**: Use remote state storage with proper access controls
+5. **Testing**: Test certificate deployments in non-production environments first
+6. **Documentation**: Document certificate purposes and renewal procedures
 
-### Performance
-- Choose appropriate consistency levels based on your application needs
-- Use autoscale throughput for variable workloads
-- Configure proper indexing policies
-- Consider analytical storage for analytics workloads
+## Troubleshooting
 
-### Cost Optimization
-- Use free tier for development and testing
-- Monitor and adjust throughput based on usage patterns
-- Use appropriate backup policies
-- Consider serverless capacity for low-traffic applications
+### Common Issues
 
-### Monitoring
-- Enable diagnostic settings
-- Monitor throughput and storage usage
-- Set up alerts for cost and performance metrics
-- Use Azure Monitor for comprehensive monitoring
+1. **Permission Errors**: Ensure the service principal has the necessary permissions
+2. **Network Access**: Verify network ACLs allow access from your location
+3. **Certificate Import**: Ensure certificate files are in the correct format
+4. **Private Endpoints**: Verify DNS resolution for private endpoints
 
-## Contributing
+### Support
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+For issues and questions, please refer to:
+- [Azure Key Vault Documentation](https://docs.microsoft.com/en-us/azure/key-vault/)
+- [Terraform Azure Provider Documentation](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
 
 ## License
 
 This module is licensed under the MIT License. See the LICENSE file for details.
-
-## Support
-
-For issues and questions, please open an issue in the repository or contact the maintainers.

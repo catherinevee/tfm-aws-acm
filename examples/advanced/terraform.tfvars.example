@@ -1,230 +1,159 @@
 # ==============================================================================
-# Advanced Azure Cosmos DB Example - terraform.tfvars
+# Example terraform.tfvars for Advanced Certificate Management
+# ==============================================================================
+# Copy this file to terraform.tfvars and update the values with your own
 # ==============================================================================
 
-# Resource Group Configuration
-resource_group_name = "rg-cosmosdb-advanced"
-location            = "East US"
+# ==============================================================================
+# Azure Configuration
+# ==============================================================================
 
-# Cosmos DB Account Configuration
-cosmosdb_account_name = "cosmosdb-advanced-example"
+# Azure region for deployment
+location = "eastus"
 
-# Account Settings
-kind = "GlobalDocumentDB"
-enable_automatic_failover = true
-enable_multiple_write_locations = true
-consistency_level = "Strong"
+# Resource group name (will be created if it doesn't exist)
+resource_group_name = "rg-certificate-management-advanced"
 
-# Geo-replication Configuration
-geo_locations = [
+# ==============================================================================
+# Key Vault Configuration
+# ==============================================================================
+
+# Key Vault name (must be globally unique)
+key_vault_name = "kv-cert-advanced-12345"
+
+# Key Vault SKU (standard or premium)
+key_vault_sku_name = "premium"
+
+# Soft delete retention days (7-90)
+soft_delete_retention_days = 30
+
+# Enable purge protection (recommended for production)
+purge_protection_enabled = true
+
+# Enable disk encryption
+enabled_for_disk_encryption = true
+
+# ==============================================================================
+# Network Configuration
+# ==============================================================================
+
+# Virtual network address space
+vnet_address_space = ["10.0.0.0/16"]
+
+# Private subnet address prefix
+private_subnet_prefix = ["10.0.1.0/24"]
+
+# Public subnet address prefix
+public_subnet_prefix = ["10.0.2.0/24"]
+
+# Allowed IP ranges for Key Vault access
+allowed_ip_ranges = [
+  "10.0.0.0/8",
+  "192.168.0.0/16"
+]
+
+# ==============================================================================
+# Certificate Configuration
+# ==============================================================================
+
+# Self-signed certificates configuration
+self_signed_certificates = {
+  "api-production" = {
+    dns_names = ["api.example.com", "api.prod.example.com"]
+    subject   = "CN=api.example.com"
+    key_size  = 4096
+    validity_in_months = 24
+    days_before_expiry = 60
+  }
+  "web-production" = {
+    dns_names = ["www.example.com", "example.com"]
+    subject   = "CN=www.example.com"
+    key_size  = 2048
+    validity_in_months = 12
+    days_before_expiry = 30
+  }
+  "wildcard-production" = {
+    dns_names = ["*.example.com", "example.com"]
+    subject   = "CN=*.example.com"
+    key_size  = 2048
+    validity_in_months = 12
+    days_before_expiry = 30
+  }
+}
+
+# Certificate contacts for notifications
+certificate_contacts = [
   {
-    location          = "East US"
-    failover_priority = 0
-    zone_redundant    = true
+    email = "admin@example.com"
+    name  = "System Administrator"
+    phone = "+1-555-0123"
   },
   {
-    location          = "West US"
-    failover_priority = 1
-    zone_redundant    = false
+    email = "security@example.com"
+    name  = "Security Team"
+    phone = "+1-555-0456"
   }
 ]
 
-# Backup Policy
-backup_policy = {
-  type                = "Continuous"
-  retention_in_hours  = 720
-  storage_redundancy  = "Local"
-}
-
-# Network Configuration
-public_network_access_enabled = false
-
-# CORS Rules
-cors_rules = [
-  {
-    allowed_origins    = ["https://myapp.com", "https://api.myapp.com"]
-    allowed_methods    = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allowed_headers    = ["*"]
-    exposed_headers    = ["*"]
-    max_age_in_seconds = 86400
+# Certificate secrets
+certificate_secrets = {
+  "api-key" = {
+    secret_value = "your-api-key-here"
+    content_type = "text/plain"
+    purpose      = "API Authentication"
   }
-]
-
-# Capabilities
-capabilities = [
-  "EnableAggregationPipeline",
-  "EnableCassandra",
-  "EnableGremlin",
-  "EnableTable"
-]
-
-# SQL API Configuration
-sql_databases = {
-  "sqldb" = {
-    name = "sqldb"
-    autoscale_settings = {
-      max_throughput = 4000
-    }
+  "database-password" = {
+    secret_value = "your-database-password"
+    content_type = "text/plain"
+    purpose      = "Database Connection"
   }
 }
 
-sql_containers = {
-  "users" = {
-    name                = "users"
-    database_name       = "sqldb"
-    partition_key_path  = "/userId"
-    autoscale_settings = {
-      max_throughput = 4000
-    }
-    unique_keys = [
-      {
-        paths = ["/email"]
-      }
-    ]
-    indexing_policy = {
-      indexing_mode = "consistent"
-      included_paths = [
-        {
-          path = "/*"
-        }
-      ]
-      excluded_paths = [
-        {
-          path = "/\"_etag\"/?"
-        }
-      ]
-      composite_indexes = [
-        {
-          indexes = [
-            {
-              path  = "/name"
-              order = "ascending"
-            },
-            {
-              path  = "/age"
-              order = "descending"
-            }
-          ]
-        }
-      ]
-    }
-    default_ttl = 86400
-  }
-}
+# ==============================================================================
+# Certificate Issuer Configuration
+# ==============================================================================
 
-# MongoDB API Configuration
-mongo_databases = {
-  "mongodb" = {
-    name = "mongodb"
-    throughput = 400
-  }
-}
+# Certificate issuers (uncomment and configure as needed)
+# certificate_issuers = {
+#   "digicert" = {
+#     provider_name = "DigiCert"
+#     account_id    = "your-digicert-account-id"
+#     password      = "your-digicert-password"
+#     admin_contacts = [
+#       {
+#         first_name    = "John"
+#         last_name     = "Doe"
+#         email_address = "john.doe@example.com"
+#         phone         = "+1-555-0123"
+#       }
+#     ]
+#     organization_id = "your-organization-id"
+#   }
+# }
 
-mongo_collections = {
-  "products" = {
-    name          = "products"
-    database_name = "mongodb"
-    throughput    = 400
-    indexes = [
-      {
-        keys   = ["_id"]
-        unique = true
-      },
-      {
-        keys   = ["category"]
-        unique = false
-      },
-      {
-        keys   = ["price"]
-        unique = false
-      }
-    ]
-    default_ttl_seconds = 2592000
-  }
-}
+# ==============================================================================
+# Monitoring Configuration
+# ==============================================================================
 
-# Cassandra API Configuration
-cassandra_keyspaces = {
-  "cassandra" = {
-    name = "cassandra"
-    autoscale_settings = {
-      max_throughput = 4000
-    }
-  }
-}
+# Log Analytics workspace name
+log_analytics_workspace_name = "law-cert-example-12345"
 
-cassandra_tables = {
-  "events" = {
-    name          = "events"
-    keyspace_name = "cassandra"
-    throughput    = 400
-    schema = {
-      column = {
-        name = "event_id"
-        type = "uuid"
-      }
-      partition_keys = [
-        {
-          name = "event_id"
-        }
-      ]
-      cluster_keys = [
-        {
-          name     = "timestamp"
-          order_by = "desc"
-        }
-      ]
-    }
-  }
-}
+# Storage account name for diagnostics
+storage_account_name = "stcert12345"
 
-# Gremlin API Configuration
-gremlin_databases = {
-  "gremlin" = {
-    name = "gremlin"
-    autoscale_settings = {
-      max_throughput = 4000
-    }
-  }
-}
+# Diagnostic retention days
+diagnostic_retention_days = 90
 
-gremlin_graphs = {
-  "social" = {
-    name                = "social"
-    database_name       = "gremlin"
-    partition_key_path  = "/pk"
-    autoscale_settings = {
-      max_throughput = 4000
-    }
-    index_policy = {
-      indexing_mode = "consistent"
-      included_paths = [
-        {
-          path = "/*"
-        }
-      ]
-      excluded_paths = [
-        {
-          path = "/\"_etag\"/?"
-        }
-      ]
-    }
-  }
-}
-
-# Table API Configuration
-tables = {
-  "logs" = {
-    name = "logs"
-    throughput = 400
-  }
-}
-
+# ==============================================================================
 # Tags
+# ==============================================================================
+
+# Common tags for all resources
 tags = {
   Environment = "Production"
-  CostCenter  = "IT"
-  Owner       = "Database Team"
-  Project     = "Multi-API Application"
+  Project     = "Advanced Certificate Management"
+  Owner       = "DevOps Team"
+  CostCenter  = "IT-001"
+  Compliance  = "SOC2"
   ManagedBy   = "Terraform"
 } 

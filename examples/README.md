@@ -1,32 +1,34 @@
-# Azure Cosmos DB Module Examples
+# Azure Certificate Management Module Examples
 
-This directory contains example configurations for the Azure Cosmos DB Terraform module.
+This directory contains examples demonstrating how to use the Azure Certificate Management Module (AWS ACM equivalent) in different scenarios.
 
 ## Examples Overview
 
 ### Basic Example (`basic/`)
 
-A simple example demonstrating basic SQL API usage with:
-- Single-region deployment
-- Basic SQL database and container
-- Standard indexing policy
-- Manual throughput provisioning
+A simple implementation suitable for development and testing environments.
 
-**Use case**: Development and testing environments, simple applications
+**Features:**
+- Minimal configuration
+- Single self-signed certificate
+- Basic Key Vault setup
+- Development-friendly settings
+
+**Use Case:** Development, testing, proof of concept
 
 ### Advanced Example (`advanced/`)
 
-A comprehensive example demonstrating advanced features including:
-- Multi-region deployment with geo-replication
-- Multiple API support (SQL, MongoDB, Cassandra, Gremlin, Table)
-- Advanced security features (VNet integration, private access)
-- Complex indexing policies
-- Autoscale throughput
-- Backup policies
-- CORS configuration
-- Analytical storage
+A comprehensive implementation suitable for production environments.
 
-**Use case**: Production environments, complex multi-API applications
+**Features:**
+- Full network security with private endpoints
+- Multiple certificates (self-signed and imported)
+- Certificate issuers configuration
+- Comprehensive monitoring and diagnostics
+- Production-grade security settings
+- Certificate contacts and secrets management
+
+**Use Case:** Production environments, enterprise deployments
 
 ## Getting Started
 
@@ -44,198 +46,230 @@ A comprehensive example demonstrating advanced features including:
    # or use package manager
    ```
 
-3. **Azure Provider**: The examples use the Azure provider (~> 3.0)
+3. **Required Permissions**: Ensure your Azure account has the following permissions:
+   - Contributor role on the target subscription
+   - Key Vault Contributor role
+   - Network Contributor role (for advanced example)
 
-### Running the Examples
+### Quick Start with Basic Example
 
-1. **Navigate to an example directory**:
+1. Navigate to the basic example:
    ```bash
    cd examples/basic
-   # or
-   cd examples/advanced
    ```
 
-2. **Initialize Terraform**:
+2. Initialize Terraform:
    ```bash
    terraform init
    ```
 
-3. **Review the plan**:
+3. Review the plan:
    ```bash
    terraform plan
    ```
 
-4. **Apply the configuration**:
+4. Apply the configuration:
    ```bash
    terraform apply
    ```
 
-5. **Clean up resources** (when done):
+### Advanced Example Setup
+
+1. Navigate to the advanced example:
    ```bash
-   terraform destroy
+   cd examples/advanced
    ```
 
-## Example Configurations
+2. Copy the example variables file:
+   ```bash
+   cp terraform.tfvars.example terraform.tfvars
+   ```
 
-### Basic Example Features
+3. Edit `terraform.tfvars` with your specific values:
+   ```hcl
+   # Update these values
+   key_vault_name = "kv-cert-advanced-12345"
+   location = "eastus"
+   
+   # Configure your certificates
+   self_signed_certificates = {
+     "api-production" = {
+       dns_names = ["api.yourdomain.com"]
+       subject   = "CN=api.yourdomain.com"
+       key_size  = 4096
+       validity_in_months = 24
+     }
+   }
+   
+   # Configure certificate contacts
+   certificate_contacts = [
+     {
+       email = "admin@yourdomain.com"
+       name  = "Your Name"
+       phone = "+1-555-0123"
+     }
+   ]
+   ```
+
+4. Initialize and apply:
+   ```bash
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+## Configuration Options
+
+### Key Vault Settings
+
+| Setting | Basic Example | Advanced Example | Description |
+|---------|---------------|------------------|-------------|
+| SKU | Standard | Premium | Key Vault service tier |
+| Soft Delete | 7 days | 30 days | Retention period for deleted items |
+| Purge Protection | Disabled | Enabled | Prevents permanent deletion |
+| Network Access | Allow all | Restricted | Network access control |
+
+### Certificate Types
+
+#### Self-Signed Certificates
+- **Development**: Quick setup for testing
+- **Production**: Internal services, development environments
+- **Configuration**: DNS names, validity period, key size
+
+#### Imported Certificates
+- **Use Case**: Existing certificates from external CAs
+- **Format**: PFX/P12 files with password protection
+- **Security**: Stored securely in Key Vault
+
+#### Certificate Issuers
+- **Providers**: DigiCert, GlobalSign, etc.
+- **Automation**: Automatic certificate renewal
+- **Integration**: Direct CA integration
+
+### Security Features
+
+#### Network Security
+- **Private Endpoints**: Secure access from VNet
+- **Network ACLs**: IP-based access restrictions
+- **Firewall Rules**: Subnet-based access control
+
+#### Access Control
+- **RBAC**: Role-based access control
+- **Access Policies**: Fine-grained permissions
+- **Audit Logging**: Comprehensive activity tracking
+
+#### Monitoring
+- **Diagnostic Settings**: Log Analytics integration
+- **Storage Logs**: Long-term log retention
+- **Metrics**: Performance and usage monitoring
+
+## Customization
+
+### Adding Custom Certificates
 
 ```hcl
-# Simple SQL API configuration
-module "cosmosdb" {
-  source = "../../"
-
-  cosmosdb_account_name = "cosmosdb-example-abc123"
-  location             = "East US"
-  resource_group_name  = "rg-cosmosdb-example"
-
-  # Single region deployment
-  geo_locations = [
-    {
-      location          = "East US"
-      failover_priority = 0
-      zone_redundant    = false
-    }
-  ]
-
-  # Basic SQL database and container
-  sql_databases = {
-    "mydb" = {
-      name = "mydb"
-      throughput = 400
-    }
-  }
-
-  sql_containers = {
-    "mycontainer" = {
-      name                = "mycontainer"
-      database_name       = "mydb"
-      partition_key_path  = "/id"
-      throughput          = 400
-    }
+self_signed_certificates = {
+  "custom-app" = {
+    dns_names = ["app.yourdomain.com", "www.app.yourdomain.com"]
+    subject   = "CN=app.yourdomain.com"
+    key_size  = 2048
+    validity_in_months = 12
+    days_before_expiry = 30
+    extended_key_usage = ["1.3.6.1.5.5.7.3.1"]  # Server Authentication
+    key_usage = ["digitalSignature", "keyEncipherment"]
   }
 }
 ```
 
-### Advanced Example Features
+### Configuring Certificate Issuers
 
 ```hcl
-# Multi-API configuration with advanced features
-module "cosmosdb_advanced" {
-  source = "../../"
-
-  cosmosdb_account_name = "cosmosdb-advanced-abc123"
-  location             = "East US"
-  resource_group_name  = "rg-cosmosdb-advanced"
-
-  # Multi-region deployment
-  enable_automatic_failover = true
-  enable_multiple_write_locations = true
-  consistency_level = "Strong"
-
-  geo_locations = [
-    {
-      location          = "East US"
-      failover_priority = 0
-      zone_redundant    = true
-    },
-    {
-      location          = "West US"
-      failover_priority = 1
-      zone_redundant    = false
-    }
-  ]
-
-  # Network security
-  public_network_access_enabled = false
-  virtual_network_rules = [
-    {
-      subnet_id = azurerm_subnet.example.id
-      ignore_missing_vnet_service_endpoint = false
-    }
-  ]
-
-  # Multiple APIs
-  capabilities = [
-    "EnableAggregationPipeline",
-    "EnableCassandra",
-    "EnableGremlin",
-    "EnableTable"
-  ]
-
-  # Mixed API resources
-  sql_databases = { /* ... */ }
-  mongo_databases = { /* ... */ }
-  cassandra_keyspaces = { /* ... */ }
-  gremlin_databases = { /* ... */ }
-  tables = { /* ... */ }
+certificate_issuers = {
+  "digicert" = {
+    provider_name = "DigiCert"
+    account_id    = "your-account-id"
+    password      = "your-password"
+    admin_contacts = [
+      {
+        first_name    = "John"
+        last_name     = "Doe"
+        email_address = "john.doe@yourdomain.com"
+        phone         = "+1-555-0123"
+      }
+    ]
+  }
 }
 ```
 
-## Cost Considerations
+### Setting Up Private Endpoints
 
-### Basic Example
-- **Estimated cost**: $25-50/month
-- Single region deployment
-- Minimal throughput (400 RU/s)
-- Suitable for development/testing
-
-### Advanced Example
-- **Estimated cost**: $200-500/month
-- Multi-region deployment
-- Higher throughput (4000 RU/s autoscale)
-- Multiple APIs and features
-- Suitable for production workloads
-
-## Security Best Practices
-
-1. **Network Security**:
-   - Use VNet rules to restrict access
-   - Disable public network access for production
-   - Enable service endpoints
-
-2. **Authentication**:
-   - Use managed identities when possible
-   - Rotate access keys regularly
-   - Use Key Vault for key management
-
-3. **Data Protection**:
-   - Enable customer-managed keys
-   - Configure appropriate backup policies
-   - Use strong consistency when needed
-
-## Monitoring and Maintenance
-
-1. **Set up monitoring**:
-   - Enable diagnostic settings
-   - Configure alerts for cost and performance
-   - Monitor throughput usage
-
-2. **Regular maintenance**:
-   - Review and optimize indexing policies
-   - Monitor and adjust throughput
-   - Update security configurations
+```hcl
+# Enable private endpoint
+enable_private_endpoint = true
+private_endpoint_subnet_id = "/subscriptions/.../subnets/private"
+private_dns_zone_ids = ["/subscriptions/.../privatednszones/privatelink.vaultcore.azure.net"]
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Naming conflicts**: Ensure unique account names across Azure
-2. **Network connectivity**: Verify VNet rules and service endpoints
-3. **Throughput limits**: Check for capacity constraints
-4. **API compatibility**: Ensure correct capabilities are enabled
+1. **Permission Errors**
+   ```bash
+   # Ensure proper Azure CLI authentication
+   az login
+   az account show
+   ```
 
-### Getting Help
+2. **Key Vault Name Conflicts**
+   - Key Vault names must be globally unique
+   - Use random suffixes or unique naming conventions
 
-- Check the main module README for detailed documentation
-- Review Azure Cosmos DB documentation
-- Open an issue in the repository for bugs or questions
+3. **Network Access Issues**
+   - Verify IP ranges in network ACLs
+   - Check private endpoint configuration
+   - Ensure DNS resolution for private endpoints
 
-## Next Steps
+4. **Certificate Import Errors**
+   - Verify certificate file format (PFX/P12)
+   - Check certificate password
+   - Ensure certificate is not expired
 
-After running the examples:
+### Useful Commands
 
-1. **Customize the configuration** for your specific needs
-2. **Add monitoring and alerting** for production use
-3. **Implement CI/CD pipelines** for automated deployments
-4. **Set up backup and disaster recovery** procedures
-5. **Configure cost optimization** strategies 
+```bash
+# Check Key Vault status
+az keyvault show --name <key-vault-name> --resource-group <resource-group>
+
+# List certificates
+az keyvault certificate list --vault-name <key-vault-name>
+
+# Get certificate details
+az keyvault certificate show --vault-name <key-vault-name> --name <certificate-name>
+
+# Check diagnostic settings
+az monitor diagnostic-settings list --resource <key-vault-id>
+```
+
+## Cleanup
+
+To destroy the infrastructure:
+
+```bash
+# Basic example
+cd examples/basic
+terraform destroy
+
+# Advanced example
+cd examples/advanced
+terraform destroy
+```
+
+**Note**: Key Vaults with purge protection enabled may require manual cleanup in the Azure portal.
+
+## Support
+
+For issues and questions:
+- Check the [main module README](../README.md)
+- Review [Azure Key Vault documentation](https://docs.microsoft.com/en-us/azure/key-vault/)
+- Consult [Terraform Azure provider documentation](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs) 

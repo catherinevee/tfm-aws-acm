@@ -1,9 +1,16 @@
 # ==============================================================================
-# Basic Azure Cosmos DB Example
+# Basic Example - Azure Certificate Management Module
+# ==============================================================================
+# This example demonstrates the basic usage of the certificate management module
+# with minimal configuration for development and testing purposes.
 # ==============================================================================
 
-# Configure the Azure Provider
+# ==============================================================================
+# Provider Configuration
+# ==============================================================================
+
 terraform {
+  required_version = ">= 1.0"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -13,103 +20,106 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    key_vault {
+      purge_soft_delete_on_destroy    = false
+      recover_soft_deleted_key_vaults = true
+    }
+  }
 }
 
-# Create a resource group
+# ==============================================================================
+# Resource Group
+# ==============================================================================
+
 resource "azurerm_resource_group" "example" {
-  name     = "rg-cosmosdb-example"
-  location = "East US"
-}
-
-# Deploy the Cosmos DB module
-module "cosmosdb" {
-  source = "../../"
-
-  cosmosdb_account_name = "cosmosdb-example-${random_string.suffix.result}"
-  location             = azurerm_resource_group.example.location
-  resource_group_name  = azurerm_resource_group.example.name
-
-  # Basic SQL API configuration
-  kind = "GlobalDocumentDB"
-  
-  # Single region deployment
-  geo_locations = [
-    {
-      location          = "East US"
-      failover_priority = 0
-      zone_redundant    = false
-    }
-  ]
-
-  # Create a simple SQL database
-  sql_databases = {
-    "mydb" = {
-      name = "mydb"
-      throughput = 400
-    }
-  }
-
-  # Create a simple SQL container
-  sql_containers = {
-    "mycontainer" = {
-      name                = "mycontainer"
-      database_name       = "mydb"
-      partition_key_path  = "/id"
-      throughput          = 400
-      indexing_policy = {
-        indexing_mode = "consistent"
-        included_paths = [
-          {
-            path = "/*"
-          }
-        ]
-        excluded_paths = [
-          {
-            path = "/\"_etag\"/?"
-          }
-        ]
-      }
-    }
-  }
+  name     = "rg-certificate-management-example"
+  location = "eastus"
 
   tags = {
     Environment = "Development"
-    Project     = "CosmosDB Example"
-    Owner       = "DevOps Team"
+    Project     = "Certificate Management Example"
   }
 }
 
-# Generate a random suffix for unique naming
+# ==============================================================================
+# Certificate Management Module
+# ==============================================================================
+
+module "certificate_management" {
+  source = "../../"
+
+  # Required parameters
+  key_vault_name      = "kv-cert-example-${random_string.suffix.result}"
+  location           = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+
+  # Key Vault Configuration
+  soft_delete_retention_days = 7
+  purge_protection_enabled   = false  # Disabled for development
+  key_vault_sku_name         = "standard"
+
+  # Create a self-signed certificate for development
+  self_signed_certificates = {
+    "web-app-dev" = {
+      dns_names = ["localhost", "127.0.0.1"]
+      subject   = "CN=localhost"
+      key_size  = 2048
+      validity_in_months = 12
+      days_before_expiry = 30
+      exportable = true
+      reuse_key  = true
+      extended_key_usage = ["1.3.6.1.5.5.7.3.1"]  # Server Authentication
+      key_usage = ["digitalSignature", "keyEncipherment"]
+    }
+  }
+
+  # Certificate contacts for notifications
+  certificate_contacts = [
+    {
+      email = "admin@example.com"
+      name  = "Development Administrator"
+    }
+  ]
+
+  # Tags
+  tags = {
+    Environment = "Development"
+    Project     = "Certificate Management Example"
+    Purpose     = "Development and Testing"
+  }
+}
+
+# ==============================================================================
+# Random String for Unique Naming
+# ==============================================================================
+
 resource "random_string" "suffix" {
   length  = 6
   special = false
   upper   = false
 }
 
-# Output the results
-output "cosmosdb_account_name" {
-  description = "The name of the Cosmos DB account"
-  value       = module.cosmosdb.cosmosdb_account_name
+# ==============================================================================
+# Outputs
+# ==============================================================================
+
+output "key_vault_id" {
+  description = "The ID of the created Key Vault"
+  value       = module.certificate_management.key_vault_id
 }
 
-output "cosmosdb_account_endpoint" {
-  description = "The endpoint of the Cosmos DB account"
-  value       = module.cosmosdb.cosmosdb_account_endpoint
+output "key_vault_uri" {
+  description = "The URI of the created Key Vault"
+  value       = module.certificate_management.key_vault_uri
 }
 
-output "cosmosdb_account_primary_key" {
-  description = "The primary key of the Cosmos DB account"
-  value       = module.cosmosdb.cosmosdb_account_primary_key
-  sensitive   = true
+output "certificates" {
+  description = "Details of created certificates"
+  value       = module.certificate_management.self_signed_certificates
 }
 
-output "sql_databases" {
-  description = "The SQL databases created"
-  value       = module.cosmosdb.sql_databases
-}
-
-output "sql_containers" {
-  description = "The SQL containers created"
-  value       = module.cosmosdb.sql_containers
+output "summary" {
+  description = "Summary of the deployment"
+  value       = module.certificate_management.summary
 } 
