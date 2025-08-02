@@ -1,19 +1,168 @@
-# Azure Certificate Management Module (AWS ACM Equivalent)
+# AWS Certificate Manager (ACM) Terraform Module
 
-This Terraform module provides comprehensive certificate management functionality for Azure, equivalent to AWS Certificate Manager (ACM). It uses Azure Key Vault as the primary certificate store and management service.
+A comprehensive Terraform module for managing SSL/TLS certificates using AWS Certificate Manager (ACM). This module provides functionality for creating, importing, and managing certificates with cross-region support.
 
 ## Resource Map
 
-| Resource Type | Resource Name | Description |
-|--------------|---------------|-------------|
-| `azurerm_key_vault` | `certificate_vault` | Primary Key Vault for certificate storage and management |
-| `azurerm_key_vault_certificate` | `self_signed` | Self-signed certificates for development/testing |
-| `azurerm_key_vault_certificate` | `imported` | Imported existing certificates |
-| `azurerm_key_vault_certificate_issuer` | `certificate_issuer` | Certificate authority configuration |
-| `azurerm_key_vault_certificate_contacts` | `certificate_contacts` | Contact information for certificate notifications |
-| `azurerm_key_vault_secret` | `certificate_secrets` | Certificate-related secrets storage |
-| `azurerm_private_endpoint` | `vault_private_endpoint` | Private network endpoint for Key Vault access |
-| `azurerm_monitor_diagnostic_setting` | `vault_diagnostics` | Diagnostic settings for monitoring |
+| Resource Type | Purpose | Required | Description |
+|--------------|---------|----------|-------------|
+| `aws_acm_certificate` | Core | Yes | Primary certificate resource |
+| `aws_acm_certificate_validation` | Core | Yes | Certificate validation management |
+| `aws_route53_record` | DNS | No | DNS validation records |
+| `aws_route53_zone` | DNS | No | Hosted zone for DNS validation |
+| `aws_cloudwatch_metric_alarm` | Monitoring | No | Certificate expiration alerts |
+
+## Features
+
+- **Certificate Management**: Create and manage SSL/TLS certificates
+- **Multi-region Support**: Optional secondary region for cross-region usage
+- **DNS Validation**: Automated DNS validation for certificates
+- **Email Validation**: Support for email validation method
+- **Monitoring**: Built-in expiration monitoring with CloudWatch
+- **Tag Management**: Standardized tagging for all resources
+- **Default Settings**: Configurable defaults for all certificates
+
+## Usage
+
+### Basic Example
+
+```hcl
+module "acm" {
+  source  = "github.com/catherinevee/tfm-aws-acm"
+  version = "~> 1.0"
+
+  aws_region = "us-east-1"
+  
+  certificates = {
+    "example-com" = {
+      domain_name               = "example.com"
+      subject_alternative_names = ["*.example.com"]
+      validation_method        = "DNS"
+    }
+  }
+
+  tags = {
+    Environment = "production"
+    Project     = "website"
+    CostCenter  = "web-team"
+    Owner       = "infrastructure"
+  }
+}
+```
+
+### Cross-Region Example
+
+```hcl
+module "acm_multi_region" {
+  source  = "github.com/catherinevee/tfm-aws-acm"
+  version = "~> 1.0"
+
+  aws_region       = "us-east-1"
+  secondary_region = "us-west-2"
+  
+  certificates = {
+    "api-example-com" = {
+      domain_name               = "api.example.com"
+      subject_alternative_names = ["*.api.example.com"]
+      validation_method        = "DNS"
+      create_in_secondary     = true
+    }
+  }
+
+  tags = {
+    Environment = "production"
+    Project     = "api-gateway"
+    CostCenter  = "platform"
+    Owner       = "platform-team"
+  }
+}
+```
+
+## Requirements
+
+| Name | Version |
+|------|---------|
+| terraform | ~> 1.13.0 |
+| aws | ~> 6.2.0 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| aws | ~> 6.2.0 |
+| aws.secondary | ~> 6.2.0 |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| aws_region | Primary AWS region for certificate creation | string | "us-east-1" | yes |
+| secondary_region | Secondary region for cross-region certificates | string | null | no |
+| certificates | Map of certificate configurations | map(object) | {} | yes |
+| tags | Map of tags to apply to all resources | map(string) | {} | yes |
+| certificate_defaults | Default settings for all certificates | object | {} | no |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| certificate_arns | Map of certificate ARNs by name |
+| validation_records | DNS validation records (when using DNS validation) |
+| expiration_dates | Map of certificate expiration dates |
+| validation_emails | List of validation emails (when using email validation) |
+
+## Best Practices
+
+1. **Region Selection**
+   - Use us-east-1 for CloudFront distributions
+   - Use the same region as your load balancer for ALB/NLB
+   - Enable cross-region for disaster recovery
+
+2. **Validation Methods**
+   - Prefer DNS validation over email validation
+   - Use Route 53 for automated DNS validation
+   - Plan for validation token expiration
+
+3. **Monitoring**
+   - Enable CloudWatch alarms for expiration
+   - Monitor validation status
+   - Set up SNS notifications
+
+4. **Security**
+   - Use tags for access control
+   - Implement proper IAM permissions
+   - Enable AWS Config rules
+
+## Troubleshooting
+
+Common issues and solutions:
+
+1. **Validation Timeout**
+   - Check DNS propagation
+   - Verify domain ownership
+   - Ensure proper IAM permissions
+
+2. **Cross-Region Issues**
+   - Verify secondary region provider
+   - Check resource quotas
+   - Validate IAM roles
+
+3. **CloudFront Integration**
+   - Ensure certificates are in us-east-1
+   - Check domain name matches
+   - Verify SSL/TLS version support
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+Apache 2.0 Licensed. See LICENSE for full details.
 
 ## Features
 

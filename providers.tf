@@ -2,12 +2,34 @@
 # Provider Configuration
 # ==============================================================================
 
-provider "azurerm" {
-  features {
-    key_vault {
-      purge_soft_delete_on_destroy    = false
-      recover_soft_deleted_key_vaults = true
-    }
+provider "aws" {
+  region = var.aws_region
+  
+  default_tags {
+    tags = merge(
+      var.tags,
+      {
+        ManagedBy = "terraform"
+        Module    = "tfm-aws-acm"
+      }
+    )
+  }
+}
+
+# Optional secondary region provider for cross-region certificate usage
+provider "aws" {
+  alias  = "secondary"
+  region = var.secondary_region
+  
+  default_tags {
+    tags = merge(
+      var.tags,
+      {
+        ManagedBy = "terraform"
+        Module    = "tfm-aws-acm"
+      }
+    )
+  }
   }
 }
 
