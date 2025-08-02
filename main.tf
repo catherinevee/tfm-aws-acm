@@ -12,14 +12,16 @@
 # ==============================================================================
 
 resource "azurerm_key_vault" "certificate_vault" {
-  name                        = var.key_vault_name
-  location                    = var.location
-  resource_group_name         = var.resource_group_name
-  enabled_for_disk_encryption = var.enabled_for_disk_encryption
-  tenant_id                   = data.azurerm_client_config.current.tenant_id
-  soft_delete_retention_days  = var.soft_delete_retention_days
-  purge_protection_enabled    = var.purge_protection_enabled
-  sku_name                    = var.key_vault_sku_name
+  name                            = var.key_vault_name
+  location                        = var.location
+  resource_group_name             = var.resource_group_name
+  enabled_for_disk_encryption     = var.enabled_for_disk_encryption
+  tenant_id                       = data.azurerm_client_config.current.tenant_id
+  soft_delete_retention_days      = var.soft_delete_retention_days
+  purge_protection_enabled        = var.purge_protection_enabled
+  sku_name                        = var.key_vault_sku_name
+  enable_rbac_authorization       = var.enable_rbac_authorization
+  public_network_access_enabled   = !var.enable_private_endpoint
 
   # Network access configuration
   dynamic "network_acls" {
@@ -275,26 +277,18 @@ resource "azurerm_monitor_diagnostic_setting" "key_vault_diagnostics" {
   log_analytics_workspace_id = var.log_analytics_workspace_id
   storage_account_id         = var.storage_account_id
 
-  dynamic "log" {
+  dynamic "enabled_log" {
     for_each = var.diagnostic_log_categories
     content {
-      category = log.value
-      enabled  = true
-
-      retention_policy {
-        enabled = true
-        days    = var.diagnostic_retention_days
-      }
+      category = enabled_log.value
     }
   }
 
-  metric {
-    category = "AllMetrics"
-    enabled  = true
-
-    retention_policy {
-      enabled = true
-      days    = var.diagnostic_retention_days
+  dynamic "metric" {
+    for_each = ["AllMetrics"]
+    content {
+      category = metric.value
+      enabled  = true
     }
   }
 } 

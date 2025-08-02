@@ -2,6 +2,19 @@
 
 This Terraform module provides comprehensive certificate management functionality for Azure, equivalent to AWS Certificate Manager (ACM). It uses Azure Key Vault as the primary certificate store and management service.
 
+## Resource Map
+
+| Resource Type | Resource Name | Description |
+|--------------|---------------|-------------|
+| `azurerm_key_vault` | `certificate_vault` | Primary Key Vault for certificate storage and management |
+| `azurerm_key_vault_certificate` | `self_signed` | Self-signed certificates for development/testing |
+| `azurerm_key_vault_certificate` | `imported` | Imported existing certificates |
+| `azurerm_key_vault_certificate_issuer` | `certificate_issuer` | Certificate authority configuration |
+| `azurerm_key_vault_certificate_contacts` | `certificate_contacts` | Contact information for certificate notifications |
+| `azurerm_key_vault_secret` | `certificate_secrets` | Certificate-related secrets storage |
+| `azurerm_private_endpoint` | `vault_private_endpoint` | Private network endpoint for Key Vault access |
+| `azurerm_monitor_diagnostic_setting` | `vault_diagnostics` | Diagnostic settings for monitoring |
+
 ## Features
 
 - **Azure Key Vault Integration**: Secure certificate storage and management

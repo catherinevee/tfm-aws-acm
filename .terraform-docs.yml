@@ -1,0 +1,45 @@
+# Terraform Docs Configuration
+formatter: markdown table
+
+sections:
+  show:
+  - header
+  - requirements
+  - providers
+  - modules
+  - resources
+  - inputs
+  - outputs
+
+content: |-
+  {{ .Header }}
+
+  {{ include "docs/badges.md" }}
+
+  {{ .Requirements }}
+
+  {{ .Providers }}
+
+  {{ .Modules }}
+
+  ## Resource Map
+
+  {{ include "docs/resource_map.md" }}
+
+  {{ .Resources }}
+
+  {{ .Inputs }}
+
+  {{ .Outputs }}
+
+  ## Examples
+
+  {{ include "docs/examples.md" }}
+
+  ## Security Considerations
+
+  {{ include "docs/security.md" }}
+
+  ## Contributing
+
+  {{ include "docs/contributing.md" }}
