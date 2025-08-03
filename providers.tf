@@ -30,9 +30,4 @@ provider "aws" {
       }
     )
   }
-  }
-}
-
-provider "aws" {
-  # Add AWS provider configuration if needed for hybrid scenarios
 }

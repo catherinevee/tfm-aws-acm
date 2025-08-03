@@ -1,6 +1,12 @@
-.PHONY: all init fmt validate test docs clean
+.PHONY: all init fmt validate test docs clean security-scan pre-commit help
 
 all: init fmt validate test
+
+help: ## Show this help message
+	@echo 'Usage: make [target]'
+	@echo ''
+	@echo 'Targets:'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 init:
 	terraform init

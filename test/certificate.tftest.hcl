@@ -1,30 +1,37 @@
 variables {
-  key_vault_name      = "test-cert-vault"
-  location           = "eastus"
-  resource_group_name = "test-rg"
+  aws_region = "us-east-1"
+  certificates = {
+    "test-example-com" = {
+      domain_name               = "test.example.com"
+      subject_alternative_names = ["*.test.example.com"]
+      validation_method        = "DNS"
+    }
+  }
+  tags = {
+    Environment = "test"
+    Project     = "test-project"
+  }
 }
 
-provider "azurerm" {
-  features {}
-  skip_provider_registration = true
-  use_msi                   = false
+provider "aws" {
+  region = "us-east-1"
 }
 
 run "setup" {
   command = plan
 
   assert {
-    condition     = azurerm_key_vault.certificate_vault.name == var.key_vault_name
-    error_message = "Key Vault name does not match input"
+    condition     = length(aws_acm_certificate.certificates) > 0
+    error_message = "At least one certificate should be created"
   }
 
   assert {
-    condition     = azurerm_key_vault.certificate_vault.location == var.location
-    error_message = "Key Vault location does not match input"
+    condition     = aws_acm_certificate.certificates["test-example-com"].domain_name == "test.example.com"
+    error_message = "Certificate domain name does not match input"
   }
 
   assert {
-    condition     = length(azurerm_key_vault.certificate_vault.network_acls) > 0
-    error_message = "Network ACLs should be configured"
+    condition     = aws_acm_certificate.certificates["test-example-com"].validation_method == "DNS"
+    error_message = "Certificate validation method should be DNS"
   }
 }

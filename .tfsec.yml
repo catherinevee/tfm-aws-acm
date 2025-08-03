@@ -1,0 +1,20 @@
+# tfsec configuration for tfm-aws-acm module
+# Customize security scanning rules
+
+# Skip specific checks that may not apply to this module
+skip:
+# Skip AWS018 (ensure security group rule descriptions) as ACM doesn't use security groups
+- AWS018
+# Skip AWS017 (ensure all data is stored in S3) as this is not applicable
+- AWS017
+
+# Customize severity levels
+severity_overrides:
+  # Lower severity for some checks that are less critical for ACM
+  AWS019: LOW # Ensure security group rule descriptions
+
+# Exclude specific files or directories
+exclude:
+- "examples/**"
+- "test/**"
+- "*.tfvars"

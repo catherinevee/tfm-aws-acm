@@ -26,6 +26,30 @@ variable "certificates" {
     tags                     = optional(map(string), {})
   }))
   default = {}
+  
+  validation {
+    condition = alltrue([
+      for cert_name, cert_config in var.certificates : 
+      can(regex("^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$", cert_name))
+    ])
+    error_message = "Certificate names must be valid identifiers (alphanumeric and hyphens only, cannot start or end with hyphen)."
+  }
+  
+  validation {
+    condition = alltrue([
+      for cert_name, cert_config in var.certificates : 
+      can(regex("^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$", cert_config.domain_name))
+    ])
+    error_message = "Domain names must be valid domain name format."
+  }
+  
+  validation {
+    condition = alltrue([
+      for cert_name, cert_config in var.certificates : 
+      contains(["DNS", "EMAIL"], cert_config.validation_method)
+    ])
+    error_message = "Validation method must be either 'DNS' or 'EMAIL'."
+  }
 }
 
 variable "certificate_defaults" {
@@ -55,12 +79,27 @@ variable "aws_region" {
   description = "Primary AWS region where certificates will be created"
   type        = string
   default     = "us-east-1"
+  
+  validation {
+    condition     = can(regex("^[a-z]{2}-[a-z]+-[1-9][0-9]*$", var.aws_region))
+    error_message = "AWS region must be a valid region format (e.g., us-east-1, eu-west-1)."
+  }
 }
 
 variable "secondary_region" {
   description = "Secondary AWS region for cross-region certificate usage"
   type        = string
   default     = null
+  
+  validation {
+    condition     = var.secondary_region == null || can(regex("^[a-z]{2}-[a-z]+-[1-9][0-9]*$", var.secondary_region))
+    error_message = "Secondary AWS region must be a valid region format (e.g., us-east-1, eu-west-1) or null."
+  }
+  
+  validation {
+    condition     = var.secondary_region == null || var.secondary_region != var.aws_region
+    error_message = "Secondary region must be different from the primary region."
+  }
 }
 
 variable "dns_validation_options" {
