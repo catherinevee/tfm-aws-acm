@@ -1,8 +1,5 @@
-# ==============================================================================
 # Local Variables for AWS Certificate Manager Module
-# ==============================================================================
-# This file defines local variables for consistent configuration and processing
-# ==============================================================================
+# Defines local variables for consistent configuration and processing
 
 locals {
   # Default tags applied to all resources
@@ -36,14 +33,4 @@ locals {
     for cert in local.certificates : cert
     if cert.validation_method == "DNS"
   ]) > 0
-
-  # Default validation settings
-  validation_settings = {
-    dns = {
-      ttl = 300
-    }
-    email = {
-      wait_for_validation = true
-    }
-  }
 }

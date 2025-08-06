@@ -8,30 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-01-27
 
 ### Added
-- Initial release of the AWS Certificate Manager (ACM) module
+- Initial release of AWS Certificate Manager (ACM) module
 - SSL/TLS certificate creation and management
 - Cross-region certificate support
 - DNS validation with Route 53 integration
 - Email validation support
-- Certificate monitoring with CloudWatch alarms
-- Comprehensive tagging support
-- Enhanced variable validation
-- Complete documentation and examples
-- Resource map for better understanding
+- CloudWatch monitoring for certificate expiration
+- Standardized tagging support
+- Variable validation with error messages
+- Documentation and working examples
+- Resource mapping for dependencies
 
 ### Changed
-- Updated provider versions:
-  - Terraform ~> 1.13.0
-  - AWS Provider ~> 6.2.0
+- Provider versions: Terraform ~> 1.13.0, AWS Provider ~> 6.2.0
 
 ### Security
-- Enhanced input validation for domain names and regions
-- Implemented secure default configurations
-- Added security scanning integration
-- Cross-variable validation for region consistency
+- Input validation for domain names and regions
+- Secure default configurations
+- Security scanning integration
+- Cross-variable validation for consistency
 
 ### Fixed
-- Removed Azure-specific content from documentation
-- Fixed provider configuration syntax errors
-- Updated test files to use AWS resources
-- Enhanced error messages in validation blocks
+- Corrected Azure references to AWS-specific content
+- Fixed provider configuration syntax
+- Updated test files for AWS resources
+- Improved validation error messages

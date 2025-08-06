@@ -1,16 +1,7 @@
-# ==============================================================================
 # Data Sources
-# ==============================================================================
 
-data "azurerm_client_config" "current" {}
+# Current AWS caller identity for account info
+data "aws_caller_identity" "current" {}
 
-data "azurerm_resource_group" "certificate_group" {
-  name = var.resource_group_name
-}
-
-# Get existing certificate issuer if specified
-data "azurerm_key_vault_certificate_issuer" "existing" {
-  for_each     = tomap(var.existing_issuers != null ? var.existing_issuers : {})
-  name         = each.key
-  key_vault_id = azurerm_key_vault.certificate_vault.id
-}
+# Current AWS region
+data "aws_region" "current" {}

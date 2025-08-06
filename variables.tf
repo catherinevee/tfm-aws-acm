@@ -1,8 +1,5 @@
-# ==============================================================================
 # Variables for AWS Certificate Manager Module
-# ==============================================================================
-# This file defines all input variables for configuring AWS ACM certificates
-# ==============================================================================
+# Input variables for configuring ACM certificates and validation
 
 variable "environment" {
   description = "Environment tag value for resource identification (e.g., dev, qa, staging, prod)"
@@ -110,10 +107,14 @@ variable "dns_validation_options" {
   default = {}
 }
 
-variable "email_validation_options" {
-  description = "Map of options for EMAIL validation method"
-  type = map(object({
-    wait_for_validation = optional(bool, true)
-  }))
-  default = {}
+variable "create_iam_policy" {
+  description = "Whether to create IAM policies for certificate management"
+  type        = bool
+  default     = false
+}
+
+variable "create_route53_records" {
+  description = "Whether to create Route 53 DNS validation records automatically"
+  type        = bool
+  default     = false
 }
